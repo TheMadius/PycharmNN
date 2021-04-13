@@ -23,27 +23,35 @@ X_test = X_test.unsqueeze(1).float()
 class NeironNet(torch.nn.Module):
     def __init__(self):
         super(NeironNet, self).__init__()
-        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5, padding=2)
-        self.ac1 = torch.nn.Tanh()
-        self.pool1 = torch.nn.AvgPool2d(kernel_size=2, stride=2)
+        self.conv1_1 = torch.nn.Conv2d(in_channels=1, out_channels=6, kernel_size=3, padding=1)
+        self.conv1_2 = torch.nn.Conv2d(in_channels=6, out_channels=6, kernel_size=3, padding=1)
+        self.ac1 = torch.nn.ReLU()
+        self.bn1 = torch.nn.BatchNorm2d(num_features=6)
+        self.pool1 = torch.nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.conv2 = torch.nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5, padding=0)
-        self.ac2 = torch.nn.Tanh()
-        self.pool2 = torch.nn.AvgPool2d(kernel_size=2, stride=2)
+        self.conv2_1 = torch.nn.Conv2d(in_channels=6, out_channels=16, kernel_size=3, padding=0)
+        self.conv2_2 = torch.nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3, padding=0)
+        self.ac2 = torch.nn.ReLU()
+        self.bn2 = torch.nn.BatchNorm2d(num_features=16)
+        self.pool2 = torch.nn.MaxPool2d(kernel_size=2, stride=2)
 
         self.fc1 = torch.nn.Linear(400, 120)
-        self.ac3 = torch.nn.Tanh()
+        self.ac3 = torch.nn.ReLU()
         self.fc2 = torch.nn.Linear(120, 84)
-        self.ac4 = torch.nn.Tanh()
+        self.ac4 = torch.nn.ReLU()
         self.fc3 = torch.nn.Linear(84, 10)
 
     def forward(self, x):
-        x = self.conv1(x)
+        x = self.conv1_1(x)
+        x = self.conv1_2(x)
         x = self.ac1(x)
+        x = self.bn1(x)
         x = self.pool1(x)
 
-        x = self.conv2(x)
+        x = self.conv2_1(x)
+        x = self.conv2_2(x)
         x = self.ac2(x)
+        x = self.bn2(x)
         x = self.pool2(x)
 
         x = x.view(x.size(0), 400)
@@ -71,6 +79,7 @@ for epoch in range(10000):
     order = np.random.permutation(len(X_train))
     for index in range(0, len(X_train), batch_size):
         optimizator.zero_grad()
+        net.train()
 
         batch_index = order[index:index + batch_size]
         X_batch = X_train[batch_index].to(devise)
@@ -82,7 +91,7 @@ for epoch in range(10000):
         loss_value.backward()
 
         optimizator.step()
-
+    net.eval()
     test_preds = net.forward(X_test)
     accuracy = (test_preds.argmax(dim=1) == Y_test).float().mean()
     print(accuracy)
