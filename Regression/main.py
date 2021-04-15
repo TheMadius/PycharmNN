@@ -1,11 +1,13 @@
 import torch
 import matplotlib.pyplot as plt
 
+devise = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 class SinNet(torch.nn.Module):
     def __init__(self, n_hidder_neurons):
         super(SinNet, self).__init__()
         self.fc1 = torch.nn.Linear(1, n_hidder_neurons)
-        self.act1 = torch.nn.Sigmoid()
+        self.act1 = torch.nn.Tanh()
         self.fc2 = torch.nn.Linear(n_hidder_neurons, 1)
 
     def forward(self, x):
@@ -30,28 +32,33 @@ x_train = torch.rand(100) * 20 - 10
 y_train = torch.sin(x_train)
 
 y_train = y_train + torch.randn(y_train.shape) / 5
-
+print(x_train.shape)
 x_train.unsqueeze_(1)
 y_train.unsqueeze_(1)
 
+x_train = x_train.to(devise)
+y_train = y_train.to(devise)
+
+print(x_train.shape)
 x_val = torch.linspace(-10, 10, 100)
 y_val = torch.sin(x_val)
 
 x_val.unsqueeze_(1)
 y_val.unsqueeze_(1)
 
+x_val = x_train.to(devise)
+y_val = y_train.to(devise)
+
 sine_net = SinNet(50)
-optimizer = torch.optim.Adam(sine_net.parameters(), lr=0.01)
+sine_net = sine_net.to(devise)
+
+optimizer = torch.optim.Adam(sine_net.parameters(), lr=0.001)
 
 for _ in range(20000):
     optimizer.zero_grad()
-
     y_pred = sine_net.forward(x_train)
-
     loss_val = loss(y_pred, y_train)
-
     loss_val.backward()
-
     optimizer.step()
 
 y_pred = sine_net.forward(x_train)

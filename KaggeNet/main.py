@@ -52,7 +52,7 @@ class NeironNet(torch.nn.Module):
         self.bn2 = torch.nn.BatchNorm2d(num_features=16)
         self.pool2 = torch.nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.fc1 = torch.nn.Linear(400, 120)
+        self.fc1 = torch.nn.Linear(46656, 120)
         self.ac3 = torch.nn.ReLU()
         self.fc2 = torch.nn.Linear(120, 84)
         self.ac4 = torch.nn.ReLU()
@@ -71,7 +71,7 @@ class NeironNet(torch.nn.Module):
         x = self.bn2(x)
         x = self.pool2(x)
 
-        x = x.view(x.size(0), 400)
+        x = x.view(x.size(0), 46656)
 
         x = self.fc1(x)
         x = self.ac3(x)
@@ -87,7 +87,8 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizator, step_size = 7, gamma=0.
 
 
 for epoch in range(100):
-    for X_batch, Y_batch in train_dataloader:
+    for X_batch, Y_batch in tqdm(train_dataset):
+        X_batch = X_batch.unsqueeze(0).float()
         optimizator.zero_grad()
         net.train()
 
@@ -100,7 +101,8 @@ for epoch in range(100):
     net.eval()
     accuracy = 0.0
     count = 0
-    for X_test, Y_test in val_dataloader:
+    for X_test, Y_test in tqdm(val_dataset):
+        X_batch = X_batch.unsqueeze(0).float()
         test_preds = net.forward(X_test)
         accuracy += (test_preds.argmax(dim=1) == Y_test).float().mean()
         ++count

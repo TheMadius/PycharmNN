@@ -19,11 +19,10 @@ X_test = X_test.float()
 X_train = X_train.unsqueeze(1).float()
 X_test = X_test.unsqueeze(1).float()
 
-
 class NeironNet(torch.nn.Module):
     def __init__(self):
         super(NeironNet, self).__init__()
-        self.conv1_1 = torch.nn.Conv2d(in_channels=3, out_channels=6, kernel_size=3, padding=1)
+        self.conv1_1 = torch.nn.Conv2d(in_channels=1, out_channels=6, kernel_size=3, padding=1)
         self.conv1_2 = torch.nn.Conv2d(in_channels=6, out_channels=6, kernel_size=3, padding=1)
         self.ac1 = torch.nn.ReLU()
         self.bn1 = torch.nn.BatchNorm2d(num_features=6)
@@ -45,14 +44,14 @@ class NeironNet(torch.nn.Module):
         x = self.conv1_1(x)
         x = self.conv1_2(x)
         x = self.ac1(x)
-        x = self.bn1(x)
         x = self.pool1(x)
+        x = self.bn1(x)
 
         x = self.conv2_1(x)
         x = self.conv2_2(x)
         x = self.ac2(x)
-        x = self.bn2(x)
         x = self.pool2(x)
+        x = self.bn2(x)
 
         x = x.view(x.size(0), 400)
 
