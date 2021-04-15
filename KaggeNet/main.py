@@ -31,6 +31,12 @@ val_transforms = transforms.Compose([
 train_dataset = torchvision.datasets.ImageFolder(train_dir, train_transforms)
 val_dataset = torchvision.datasets.ImageFolder(val_dir, val_transforms)
 
+batch_size = 8
+train_dataloader = torch.utils.data.DataLoader(
+    train_dataset, batch_size=batch_size, shuffle=True, num_workers=batch_size)
+val_dataloader = torch.utils.data.DataLoader(
+    val_dataset, batch_size=batch_size, shuffle=False, num_workers=batch_size)
+
 class NeironNet(torch.nn.Module):
     def __init__(self):
         super(NeironNet, self).__init__()
@@ -74,10 +80,28 @@ class NeironNet(torch.nn.Module):
         x = self.fc3(x)
         return x
 
-devise = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
 net = NeironNet()
-net = net.to(devise)
-
 loss = torch.nn.CrossEntropyLoss()
 optimizator = torch.optim.Adam(net.parameters(), lr=1.0e-4)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizator, step_size = 7, gamma=0.1)
+
+
+for epoch in range(100):
+    for X_batch, Y_batch in train_dataloader:
+        optimizator.zero_grad()
+        net.train()
+
+        preds = net.forward(X_batch)
+
+        loss_value = loss(preds, Y_batch)
+        loss_value.backward()
+
+        optimizator.step()
+    net.eval()
+    accuracy = 0.0
+    count = 0
+    for X_test, Y_test in val_dataloader:
+        test_preds = net.forward(X_test)
+        accuracy += (test_preds.argmax(dim=1) == Y_test).float().mean()
+        ++count
+    print(accuracy)
