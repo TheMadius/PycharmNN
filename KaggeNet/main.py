@@ -1,24 +1,35 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torchvision.datasets as numers
+import torchvision
+from matplotlib import pyplot as plt
+from torchvision import transforms, models
+from tqdm import tqdm
 
-devise = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+def printIm(train_dataset):
+    mean = np.array([0.485, 0.456, 0.406])
+    std = np.array([0.229, 0.224, 0.225])
+    for im, _ in train_dataset:
+        plt.imshow(im.permute(1, 2, 0) * std + mean)
+        plt.show()
 
-MNISY_train = numers.MNIST("./", download=True, train=True)
-MNISY_test = numers.MNIST("./", download=True, train=False)
 
-X_train = MNISY_train.train_data
-X_test = MNISY_test.train_data
-Y_train = MNISY_train.train_labels
-Y_test = MNISY_test.train_labels
+train_dir = "train"
+val_dir = "val"
+train_transforms = transforms.Compose([
+    transforms.RandomResizedCrop(224),
+    transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
 
-X_train = X_train.float()
-X_test = X_test.float()
+val_transforms = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
 
-X_train = X_train.unsqueeze(1).float()
-X_test = X_test.unsqueeze(1).float()
-
+train_dataset = torchvision.datasets.ImageFolder(train_dir, train_transforms)
+val_dataset = torchvision.datasets.ImageFolder(val_dir, val_transforms)
 
 class NeironNet(torch.nn.Module):
     def __init__(self):
@@ -39,7 +50,7 @@ class NeironNet(torch.nn.Module):
         self.ac3 = torch.nn.ReLU()
         self.fc2 = torch.nn.Linear(120, 84)
         self.ac4 = torch.nn.ReLU()
-        self.fc3 = torch.nn.Linear(84, 10)
+        self.fc3 = torch.nn.Linear(84, 2)
 
     def forward(self, x):
         x = self.conv1_1(x)
@@ -63,35 +74,10 @@ class NeironNet(torch.nn.Module):
         x = self.fc3(x)
         return x
 
+devise = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 net = NeironNet()
 net = net.to(devise)
 
 loss = torch.nn.CrossEntropyLoss()
 optimizator = torch.optim.Adam(net.parameters(), lr=1.0e-4)
-
-batch_size = 50
-
-X_test = X_test.to(devise)
-Y_test = Y_test.to(devise)
-
-for epoch in range(10000):
-    order = np.random.permutation(len(X_train))
-    for index in range(0, len(X_train), batch_size):
-        optimizator.zero_grad()
-        net.train()
-
-        batch_index = order[index:index + batch_size]
-        X_batch = X_train[batch_index].to(devise)
-        Y_batch = Y_train[batch_index].to(devise)
-
-        preds = net.forward(X_batch)
-
-        loss_value = loss(preds, Y_batch)
-        loss_value.backward()
-
-        optimizator.step()
-    net.eval()
-    test_preds = net.forward(X_test)
-    accuracy = (test_preds.argmax(dim=1) == Y_test).float().mean()
-    print(accuracy)
